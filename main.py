@@ -7,7 +7,6 @@ import httpx
 import asyncio
 import modelPred
 from py_db import prices
-from bson import json_util
 
 app = FastAPI()
 
