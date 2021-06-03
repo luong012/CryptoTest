@@ -33,7 +33,7 @@ async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 24
     if symbol:
         query = {"Symbol" : f'{symbol}'}
         # return prices.count_documents({"Symbol" : f'{symbol}'})
-    list_cur = list(prices.find(query).sort('CloseTime').limit(limit))
+    list_cur = list(prices.find(query).sort('CloseTime', -1).limit(limit))
     res = json.dumps(list_cur, default=str)
 
     print(limit)
