@@ -6,7 +6,7 @@ from typing import Optional
 import httpx 
 import asyncio
 import modelPred
-from py_db import prices
+from py_db import prices, prices_d
 
 app = FastAPI()
 
@@ -25,7 +25,7 @@ app = FastAPI()
 #         return result
 
 @app.get('/view/')
-async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 240):
+async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 240, interval: Optional[str] = '1h'):
     start = time()
     # res = await task()
 
@@ -33,7 +33,10 @@ async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 24
     if symbol:
         query = {"Symbol" : f'{symbol}'}
         # return prices.count_documents({"Symbol" : f'{symbol}'})
-    list_cur = list(prices.find(query).sort('CloseTime', -1).limit(limit))
+    if interval == '1d':
+        list_cur = list(prices_d.find(query).sort('CloseTime', -1).limit(limit))
+    else:
+        list_cur = list(prices.find(query).sort('CloseTime', -1).limit(limit))
     res = json.dumps(list_cur, default=str)
 
     print(limit)
