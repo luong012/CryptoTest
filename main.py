@@ -39,9 +39,10 @@ app.add_middleware(
 #         result = await asyncio.gather(tasks)
 #         return result
 
-@app.get('/view/')
+@app.get('/prices/')
 async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 240, interval: Optional[str] = '1h'):
 
+    #LIMIT MUST BE A POSITIVE INT
     if limit<1:
         raise HTTPException(status_code=400, detail="Bad Request")
 
@@ -50,6 +51,7 @@ async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 24
     if symbol:
         query = {"Symbol" : f'{symbol}'}
 
+    #PRICES COLLECTION FOR HOUR INTERVAL. PRICES_D COLLECTION FOR DATE INTERVAL
     if interval == '1d':
         list_cur = list(prices_d.find(query).sort('CloseTime', -1).limit(limit))
         if len(list_cur) < 1:
@@ -59,6 +61,8 @@ async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 24
         if len(list_cur) < 1:
             raise HTTPException(status_code=400, detail="Bad Request")
 
+    #REVERSE TO MAEK DATE ASC
+    list_cur.reverse()
     res = json.dumps(list_cur, default=str)
     json_compatible_item_data = jsonable_encoder(res)
     data = json.loads(json_compatible_item_data)
