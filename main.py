@@ -1,14 +1,32 @@
 import json
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from time import time
 from typing import Optional
 import httpx 
 import asyncio
 import modelPred
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
 from py_db import prices, prices_d
+from fastapi.middleware.cors import CORSMiddleware
+
+origins = [
+    "http://localhost",
+    "http://localhost:8000",
+]
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 
 # URL = "https://www.bitmex.com/api/v1/trade/bucketed?binSize=1m&partial=false&symbol=XBT&count=100&reverse=true"
 #
@@ -26,18 +44,26 @@ app = FastAPI()
 
 @app.get('/view/')
 async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 240, interval: Optional[str] = '1h'):
-    start = time()
-    # res = await task()
+
+    if limit<1:
+        raise HTTPException(status_code=400, detail="Bad Request")
 
     query = ""
+
     if symbol:
         query = {"Symbol" : f'{symbol}'}
-        # return prices.count_documents({"Symbol" : f'{symbol}'})
+
     if interval == '1d':
         list_cur = list(prices_d.find(query).sort('CloseTime', -1).limit(limit))
+        if len(list_cur) < 1:
+            raise HTTPException(status_code=400, detail="Bad Request")
     else:
         list_cur = list(prices.find(query).sort('CloseTime', -1).limit(limit))
-    res = json.dumps(list_cur, default=str)
+        if len(list_cur) < 1:
+            raise HTTPException(status_code=400, detail="Bad Request")
 
-    print(limit)
-    return json.loads(res)
+    res = json.dumps(list_cur, default=str)
+    json_compatible_item_data = jsonable_encoder(res)
+    data = json.loads(json_compatible_item_data)
+
+    return JSONResponse(content=data, status_code=200)
