@@ -12,10 +12,7 @@ from pydantic import BaseModel
 from py_db import prices, prices_d
 from fastapi.middleware.cors import CORSMiddleware
 
-origins = [
-    "http://localhost",
-    "http://localhost:8000",
-]
+origins = ["*"]
 
 app = FastAPI()
 app.add_middleware(
