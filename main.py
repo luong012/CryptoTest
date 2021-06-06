@@ -3,13 +3,12 @@ import json
 from fastapi import FastAPI, HTTPException
 from time import time
 from typing import Optional
-import httpx 
-import asyncio
-import modelPred
+import requests
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
+from modelPred import calc
 from pydantic import BaseModel
-from py_db import prices, prices_d
+from py_db import prices, prices_d, models
 from fastapi.middleware.cors import CORSMiddleware
 
 origins = ["*"]
@@ -68,3 +67,26 @@ async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 24
     data = json.loads(json_compatible_item_data)
 
     return JSONResponse(content=data, status_code=200)
+
+@app.get('/models/')
+async def getModelPath(symbol: Optional[str], interval: Optional[str] = '1h'):
+
+    query = {"symbol": f'{symbol}',"interval": f'{interval}'}
+    print(query)
+    list_cur = list(models.find(query).sort('lastMAPE', 1))
+
+    res = json.dumps(list_cur, default=str)
+    json_compatible_item_data = jsonable_encoder(res)
+    data = json.loads(json_compatible_item_data)
+
+    return JSONResponse(content=data, status_code=200)
+
+# @app.get('/predicts/')
+# async def getModelResults(symbol: Optional[str], interval: Optional[str] = '1h'):
+#     query = {"symbol": f'{symbol}', "interval": f'{interval}'}
+#     print(query)
+#     list_cur = list(models.find(query).sort('lastMAPE', 1))
+#     mape = calc(symbol, interval, list_cur)
+#
+#
+#     return mape
