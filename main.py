@@ -12,6 +12,7 @@ from py_db import prices, prices_d, models
 from fastapi.middleware.cors import CORSMiddleware
 from bson.objectid import ObjectId
 
+
 origins = ["*"]
 
 app = FastAPI()
@@ -89,11 +90,32 @@ async def getModelResults(id: Optional[str]):
     except:
         return JSONResponse(content="Not Found", status_code=404)
     try:
-        model = json.dumps(models.find_one(query), default=str)
+        model = models.find_one(query)
     except:
         return JSONResponse(status_code=404)
     if model is None:
         return JSONResponse(status_code=404)
-    data = json.loads(model)
+
+    modelJSON = json.dumps(model, default=str)
+    data = json.loads(modelJSON)
     res = calc(data.get('symbol'), data.get('interval'), data.get('fileName'))
+    updateContent = {}
+    if data.get('mapeArr') is None:
+        mapeLs = list()
+        mapeLs.append(res['mape'])
+        updateVal = {"mapeArr": mapeLs, "lastMAPE": res['mape'], "avgMAPE": res['mape']}
+        updateContent['$set']=updateVal
+        print(updateContent)
+    else:
+        mapeLs = list(data.get('mapeArr'))
+        mapeLs.append(res['mape'])
+        updateVal = {"mapeArr": mapeLs, "lastMAPE": res['mape'], "avgMAPE": sum(mapeLs)/len(mapeLs)}
+        updateContent['$set'] = updateVal
+        print(updateContent)
+    try:
+        models.update_one(query, updateContent)
+    except:
+        return JSONResponse(status_code=500)
+
+
     return res
