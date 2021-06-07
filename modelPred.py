@@ -27,7 +27,7 @@ def preProcessing(symbol, interval):
     return newDF
 
 
-def calc(symbol, interval, listModel):
+def calc(symbol, interval, modelPath):
 
     from sklearn.preprocessing import MinMaxScaler
 
@@ -40,7 +40,7 @@ def calc(symbol, interval, listModel):
 
     ratio = 0.8
 
-    pd.to_numeric(df['Close'])
+    df['Close'] = pd.to_numeric(df['Close'])
 
     train_set_len= int(len(df)*ratio)
 
@@ -69,37 +69,35 @@ def calc(symbol, interval, listModel):
 
     pd.options.mode.chained_assignment = None
 
-    for modelPath in listModel:
-        valid = dataset[train_set_len:, :]
 
-        # Load model
-        fileName = modelPath['fileName']
-        model = tf.keras.models.load_model(f'models/{interval}/{symbol}/{fileName}')
-        closing_price = model.predict(X_test)
-        closing_price = scaler.inverse_transform(closing_price)
+    # Load model
+    fileName = modelPath
+    model = tf.keras.models.load_model(f'models/{interval}/{symbol}/{fileName}')
+    closing_price = model.predict(X_test)
+    closing_price = scaler.inverse_transform(closing_price)
 
-        # Evaluating model accuracy
-        rms = np.sqrt(np.mean(np.power((valid - closing_price), 2)))
-        # rms
-        # mape = np.sqrt(np.mean(np.abs((valid - closing_price) / valid)))
-        #
-        print(rms)
-        # print(mape)
-        mape = mean_absolute_percentage_error(valid, closing_price)
-        print('MAPE:', mape)
+    # Evaluating model accuracy
+    rms = np.sqrt(np.mean(np.power((valid - closing_price), 2)))
+
+    # print(mape)
+    mape = mean_absolute_percentage_error(valid, closing_price)
 
 
 
 
+    valid = df[train_set_len:]
 
-        valid = df[train_set_len:]
+
+    valid['Predictions'] = closing_price
+    # plt.plot(train['Close'])
+    # plt.plot(valid['Close', 'Predictions'])
+    # plt.show()
+    valid['Time'] = valid.index
+    validJSON = valid.to_json(orient="records")
+    validParsed = json.loads(validJSON)
 
 
-        valid['Predictions'] = closing_price
-        # plt.plot(train['Close'])
-        # plt.plot(valid['Close', 'Predictions'])
-        # plt.show()
-        print(valid)
-        print(fileName)
-
-    return mape
+    res = {}
+    res["mape"]=mape
+    res["testRes"] = validParsed
+    return res

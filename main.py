@@ -10,6 +10,7 @@ from modelPred import calc
 from pydantic import BaseModel
 from py_db import prices, prices_d, models
 from fastapi.middleware.cors import CORSMiddleware
+from bson.objectid import ObjectId
 
 origins = ["*"]
 
@@ -81,12 +82,18 @@ async def getModelPath(symbol: Optional[str], interval: Optional[str] = '1h'):
 
     return JSONResponse(content=data, status_code=200)
 
-# @app.get('/predicts/')
-# async def getModelResults(symbol: Optional[str], interval: Optional[str] = '1h'):
-#     query = {"symbol": f'{symbol}', "interval": f'{interval}'}
-#     print(query)
-#     list_cur = list(models.find(query).sort('lastMAPE', 1))
-#     mape = calc(symbol, interval, list_cur)
-#
-#
-#     return mape
+@app.get('/predicts/')
+async def getModelResults(id: Optional[str]):
+    try:
+        query = {"_id": ObjectId(id)}
+    except:
+        return JSONResponse(content="Not Found", status_code=404)
+    try:
+        model = json.dumps(models.find_one(query), default=str)
+    except:
+        return JSONResponse(status_code=404)
+    if model is None:
+        return JSONResponse(status_code=404)
+    data = json.loads(model)
+    res = calc(data.get('symbol'), data.get('interval'), data.get('fileName'))
+    return res
