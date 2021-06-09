@@ -7,8 +7,7 @@ import requests
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from modelPred import calc
-from pydantic import BaseModel
-from py_db import prices, prices_d, models, testCrons, cronLogs
+from py_db import prices, prices_d, models, cronLogs
 from fastapi.middleware.cors import CORSMiddleware
 from bson.objectid import ObjectId
 from convert import convert
@@ -26,20 +25,6 @@ app.add_middleware(
 )
 
 
-
-# URL = "https://www.bitmex.com/api/v1/trade/bucketed?binSize=1m&partial=false&symbol=XBT&count=100&reverse=true"
-#
-#
-# async def request(client):
-#     response = await client.get(URL)
-#     return response.json()
-#
-#
-# async def task():
-#     async with httpx.AsyncClient() as client:
-#         tasks = request(client)
-#         result = await asyncio.gather(tasks)
-#         return result
 
 @app.get('/prices/')
 async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 240, interval: Optional[str] = '1h'):
