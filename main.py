@@ -1,16 +1,17 @@
 import json
 
 from fastapi import FastAPI, HTTPException
-from time import time
+import datetime
 from typing import Optional
 import requests
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from modelPred import calc
 from pydantic import BaseModel
-from py_db import prices, prices_d, models
+from py_db import prices, prices_d, models, testCrons, cronLogs
 from fastapi.middleware.cors import CORSMiddleware
 from bson.objectid import ObjectId
+from convert import convert
 
 
 origins = ["*"]
@@ -119,3 +120,74 @@ async def getModelResults(id: Optional[str]):
 
 
     return res
+
+@app.post('/updates')
+async def updatePriceData(symbol: Optional[str], interval: Optional[str] = '1h'):
+
+    query = {"Symbol": f'{symbol}'}
+    if interval=='1h':
+        price = list(prices.find(query).sort("CloseTime", -1).limit(1))
+    else:
+        price = list(prices_d.find(query).sort("CloseTime", -1).limit(1))
+    startTime = price[0]['CloseTime']
+
+    url = f'https://api1.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit=1000&startTime={startTime}'
+    result = requests.get(url)
+    apiJSON = result.json()
+    res = {}
+    res = convert(symbol, apiJSON)
+
+    try:
+        results = testCrons.insert_many(res)
+        print('ok')
+    except:
+        print('err')
+        JSONResponse(status_code=500)
+
+    jsonstr = json.dumps(res, default=str)
+    json_compatible_item_data = jsonable_encoder(jsonstr)
+    data = json.loads(json_compatible_item_data)
+
+    return JSONResponse(content=data, status_code=201)
+
+@app.post('/hourlyCrons')
+def writeHCronLogs(event: Optional[str]):
+    log = {}
+    log["event"] = ""
+    if event=="start":
+        log["event"] = "Hourly cronjob started"
+    if event=="stop":
+        log["event"] = "Hourly cronjob stopped"
+    log["executedTime"] = str(datetime.datetime.now())
+    try:
+        res = cronLogs.insert_one(log)
+        print('Sent')
+    except:
+        print('Err')
+        JSONResponse(status_code=500)
+
+    jsonstr = json.dumps(log, default=str)
+    json_compatible_item_data = jsonable_encoder(jsonstr)
+    data = json.loads(json_compatible_item_data)
+    return JSONResponse(content=data, status_code=201)
+
+@app.post('/dailyCrons')
+def writeHCronLogs(event: Optional[str]):
+    log = {}
+    log["event"] = ""
+    if event=="start":
+        log["event"] = "Daily cronjob started"
+    if event=="stop":
+        log["event"] = "Daily cronjob stopped"
+    log["executedTime"] = str(datetime.datetime.now())
+    try:
+        res = cronLogs.insert_one(log)
+        print('Sent')
+    except:
+        print('Err')
+        JSONResponse(status_code=500)
+
+    jsonstr = json.dumps(log, default=str)
+    json_compatible_item_data = jsonable_encoder(jsonstr)
+    data = json.loads(json_compatible_item_data)
+    return JSONResponse(content=data, status_code=201)

@@ -15,3 +15,5 @@ db = client.Crypto
 prices = db.Price
 prices_d = db.PriceByDate
 models = db.Model
+testCrons = db.TestCron
+cronLogs = db.cronLog
