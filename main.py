@@ -136,13 +136,20 @@ async def updatePriceData(symbol: Optional[str], interval: Optional[str] = '1h')
     apiJSON = result.json()
     res = {}
     res = convert(symbol, apiJSON)
-
-    try:
-        results = testCrons.insert_many(res)
-        print('ok')
-    except:
-        print('err')
-        JSONResponse(status_code=500)
+    if interval=="1h":
+        try:
+            results = price.insert_many(res)
+            print('ok')
+        except:
+            print('err')
+            JSONResponse(status_code=500)
+    else:
+        try:
+            results = prices_d.insert_many(res)
+            print('ok')
+        except:
+            print('err')
+            JSONResponse(status_code=500)
 
     jsonstr = json.dumps(res, default=str)
     json_compatible_item_data = jsonable_encoder(jsonstr)
