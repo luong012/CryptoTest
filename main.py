@@ -123,7 +123,7 @@ async def updatePriceData(symbol: Optional[str], interval: Optional[str] = '1h')
     res = convert(symbol, apiJSON)
     if interval=="1h":
         try:
-            results = price.insert_many(res)
+            results = prices.insert_many(res)
             print('ok')
         except:
             print('err')
