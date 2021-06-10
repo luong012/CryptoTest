@@ -183,3 +183,16 @@ def writeHCronLogs(event: Optional[str]):
     json_compatible_item_data = jsonable_encoder(jsonstr)
     data = json.loads(json_compatible_item_data)
     return JSONResponse(content=data, status_code=201)
+
+@app.get('/times/')
+def getLastOpenTime(symbol: Optional[str] = None, interval: Optional[str] = '1h', openTime: Optional[int] = 0):
+
+    query = {"Symbol": f'{symbol}'}
+    if interval == '1h':
+        price = list(prices.find(query).sort("OpenTime", -1).limit(1))
+    else:
+        price = list(prices_d.find(query).sort("OpenTime", -1).limit(1))
+    res = price[0]['OpenTime']
+    if openTime>res:
+        res=openTime
+    return res
