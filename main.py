@@ -7,7 +7,7 @@ import requests
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from modelPred import calc
-from py_db import prices, prices_d, models, cronLogs
+from py_db import prices, prices_d, models, cronLogs, modelTypes
 from fastapi.middleware.cors import CORSMiddleware
 from bson.objectid import ObjectId
 from convert import convert
@@ -24,7 +24,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+@app.get('/')
+async def testConn():
+    return 1
 
 @app.get('/prices/')
 async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 240, interval: Optional[str] = '1h'):
@@ -69,8 +71,8 @@ async def getModelPath(symbol: Optional[str], interval: Optional[str] = '1h'):
 
     return JSONResponse(content=data, status_code=200)
 
-@app.get('/predicts/')
-async def getModelResults(id: Optional[str]):
+@app.get('/predicts/{id}')
+async def getModelResults(id):
     try:
         query = {"_id": ObjectId(id)}
     except:
@@ -196,3 +198,21 @@ def getLastOpenTime(symbol: Optional[str] = None, interval: Optional[str] = '1h'
     if openTime>res:
         res=openTime
     return res
+
+@app.get('/modelTypes/{id}')
+async def getModelTypes(id):
+    try:
+        query = {"_id": ObjectId(id)}
+    except:
+        return JSONResponse(content="Not Found", status_code=404)
+    try:
+        modelType = modelTypes.find_one(query)
+    except:
+        return JSONResponse(status_code=404)
+    if modelType is None:
+        return JSONResponse(status_code=404)
+
+    jsonstr = json.dumps(modelType, default=str)
+    json_compatible_item_data = jsonable_encoder(jsonstr)
+    data = json.loads(json_compatible_item_data)
+    return JSONResponse(content=data, status_code=200)
