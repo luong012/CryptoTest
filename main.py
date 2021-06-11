@@ -6,12 +6,13 @@ from typing import Optional
 import requests
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from modelPred import calc
-from py_db import prices, prices_d, models, cronLogs, modelTypes, cryptos, defaultModels
+from modelValidate import calc
+from py_db import prices, prices_d, models, cronLogs, modelTypes, cryptos
 from fastapi.middleware.cors import CORSMiddleware
 from bson.objectid import ObjectId
 from convert import convert
 from pydantic import BaseModel
+from pred import predNext
 
 
 origins = ["*"]
@@ -72,7 +73,7 @@ async def getModelPath(symbol: Optional[str], interval: Optional[str] = '1h'):
 
     return JSONResponse(content=data, status_code=200)
 
-@app.get('/predicts/{id}')
+@app.get('/validates/{id}')
 async def getModelResults(id):
     try:
         query = {"_id": ObjectId(id)}
@@ -297,3 +298,28 @@ async def updateDefaultModel(id: str, model: Model):
         return JSONResponse(status_code=500)
 
     return JSONResponse(content='success', status_code=200)
+
+@app.get('/predicts/{id}')
+async def predNextPrice(id: str):
+    try:
+        query = {"_id": ObjectId(id)}
+    except:
+        return JSONResponse(content="Not Found", status_code=404)
+    try:
+        model = models.find_one(query)
+    except:
+        return JSONResponse(status_code=404)
+    if model is None:
+        return JSONResponse(status_code=404)
+
+    modelJSON = json.dumps(model, default=str)
+    data = json.loads(modelJSON)
+    res = predNext(data.get('symbol'), data.get('interval'), data.get('fileName'))
+
+    resJSON = {}
+    resJSON['nextVal'] = res
+    jsonstr = json.dumps(resJSON, default=str)
+    json_compatible_item_data = jsonable_encoder(jsonstr)
+    data = json.loads(json_compatible_item_data)
+
+    return JSONResponse(content=data, status_code=200)
