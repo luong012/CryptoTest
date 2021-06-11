@@ -317,7 +317,7 @@ async def predNextPrice(id: str):
     res = predNext(data.get('symbol'), data.get('interval'), data.get('fileName'))
 
     resJSON = {}
-    resJSON['nextVal'] = res
+    resJSON['prediction'] = res
     jsonstr = json.dumps(resJSON, default=str)
     json_compatible_item_data = jsonable_encoder(jsonstr)
     data = json.loads(json_compatible_item_data)

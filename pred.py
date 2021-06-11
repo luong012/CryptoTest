@@ -1,5 +1,5 @@
 import json
-
+import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from modelValidate import preProcessing
 import numpy as np
@@ -14,11 +14,10 @@ def predNext(symbol, interval, modelPath):
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaled_data = scaler.fit_transform(df)
     df = df[-inputSize:]
-
+    predTime = df.tail(1).index.item().timestamp()*1000 + 7199999
 
 
     inputs = df.values
-    # print(inputs)
     inputs = inputs.reshape(-1,1)
     inputs  = scaler.transform(inputs)
 
@@ -37,4 +36,6 @@ def predNext(symbol, interval, modelPath):
     closing_price = model.predict(tf.constant(X_test))
     closing_price = scaler.inverse_transform(closing_price)
 
-    return closing_price[0][0]
+    res = {'CloseTime': predTime, 'Close': closing_price[0][0]}
+
+    return res
