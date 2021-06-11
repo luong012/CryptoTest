@@ -7,7 +7,7 @@ import requests
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from modelPred import calc
-from py_db import prices, prices_d, models, cronLogs, modelTypes
+from py_db import prices, prices_d, models, cronLogs, modelTypes, cryptos
 from fastapi.middleware.cors import CORSMiddleware
 from bson.objectid import ObjectId
 from convert import convert
@@ -213,6 +213,57 @@ async def getModelTypes(id):
         return JSONResponse(status_code=404)
 
     jsonstr = json.dumps(modelType, default=str)
+    json_compatible_item_data = jsonable_encoder(jsonstr)
+    data = json.loads(json_compatible_item_data)
+    return JSONResponse(content=data, status_code=200)
+
+@app.get('/cryptos/all')
+async def getCryptos():
+
+    try:
+        cryptoLs = list(cryptos.find())
+    except:
+        return JSONResponse(status_code=404)
+    if cryptoLs is None:
+        return JSONResponse(status_code=404)
+
+    jsonstr = json.dumps(cryptoLs, default=str)
+    json_compatible_item_data = jsonable_encoder(jsonstr)
+    data = json.loads(json_compatible_item_data)
+    return JSONResponse(content=data, status_code=200)
+
+@app.get('/cryptos/{id}')
+async def getCryptoInfos(id):
+    try:
+        query = {"_id": ObjectId(id)}
+    except:
+        return JSONResponse(content="Not Found", status_code=404)
+    try:
+        crypto = cryptos.find_one(query)
+    except:
+        return JSONResponse(status_code=404)
+    if crypto is None:
+        return JSONResponse(status_code=404)
+
+    jsonstr = json.dumps(crypto, default=str)
+    json_compatible_item_data = jsonable_encoder(jsonstr)
+    data = json.loads(json_compatible_item_data)
+    return JSONResponse(content=data, status_code=200)
+
+@app.get('/cryptos/')
+async def getCryptoInfos(symbol:str):
+    try:
+        query = {"altSymbol": symbol}
+    except:
+        return JSONResponse(content="Not Found", status_code=404)
+    try:
+        crypto = cryptos.find_one(query)
+    except:
+        return JSONResponse(status_code=404)
+    if crypto is None:
+        return JSONResponse(status_code=404)
+
+    jsonstr = json.dumps(crypto, default=str)
     json_compatible_item_data = jsonable_encoder(jsonstr)
     data = json.loads(json_compatible_item_data)
     return JSONResponse(content=data, status_code=200)

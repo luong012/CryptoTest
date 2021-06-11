@@ -17,3 +17,4 @@ prices_d = db.PriceByDate
 models = db.Model
 cronLogs = db.cronLog
 modelTypes = db.ModelType
+cryptos = db.Crypto
