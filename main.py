@@ -7,10 +7,11 @@ import requests
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from modelPred import calc
-from py_db import prices, prices_d, models, cronLogs, modelTypes, cryptos
+from py_db import prices, prices_d, models, cronLogs, modelTypes, cryptos, defaultModels
 from fastapi.middleware.cors import CORSMiddleware
 from bson.objectid import ObjectId
 from convert import convert
+from pydantic import BaseModel
 
 
 origins = ["*"]
@@ -93,13 +94,11 @@ async def getModelResults(id):
         mapeLs.append(res['mape'])
         updateVal = {"mapeArr": mapeLs, "lastMAPE": res['mape'], "avgMAPE": res['mape']}
         updateContent['$set']=updateVal
-        print(updateContent)
     else:
         mapeLs = list(data.get('mapeArr'))
         mapeLs.append(res['mape'])
         updateVal = {"mapeArr": mapeLs, "lastMAPE": res['mape'], "avgMAPE": sum(mapeLs)/len(mapeLs)}
         updateContent['$set'] = updateVal
-        print(updateContent)
     try:
         models.update_one(query, updateContent)
     except:
@@ -252,10 +251,7 @@ async def getCryptoInfos(id):
 
 @app.get('/cryptos/')
 async def getCryptoInfos(symbol:str):
-    try:
-        query = {"altSymbol": symbol}
-    except:
-        return JSONResponse(content="Not Found", status_code=404)
+    query = {"altSymbol": symbol}
     try:
         crypto = cryptos.find_one(query)
     except:
@@ -267,3 +263,37 @@ async def getCryptoInfos(symbol:str):
     json_compatible_item_data = jsonable_encoder(jsonstr)
     data = json.loads(json_compatible_item_data)
     return JSONResponse(content=data, status_code=200)
+
+class Model(BaseModel):
+    interval: str
+    defaultModel: str
+
+
+@app.put('/cryptos/{id}')
+async def updateDefaultModel(id: str, model: Model):
+    try:
+        query = {"_id": ObjectId(id)}
+    except:
+        return JSONResponse(content="Not Found", status_code=404)
+
+    try:
+        crypto = cryptos.find_one(query)
+    except:
+        return JSONResponse(content="Not Found", status_code=404)
+
+    if crypto is None:
+        return JSONResponse(content="Not Found", status_code=404)
+
+    if model.interval!='1h' and model.interval!='1d':
+        return JSONResponse(content="Bad Request", status_code=400)
+
+    updateContent = {}
+    updateVal = {f'defaultModel.{model.interval}': model.defaultModel}
+    updateContent['$set'] = updateVal
+
+    try:
+        crypto = cryptos.update_one(query, updateContent)
+    except:
+        return JSONResponse(status_code=500)
+
+    return JSONResponse(content='success', status_code=200)
