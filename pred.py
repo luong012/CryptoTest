@@ -14,7 +14,10 @@ def predNext(symbol, interval, modelPath):
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaled_data = scaler.fit_transform(df)
     df = df[-inputSize:]
-    predTime = df.tail(1).index.item().timestamp()*1000 + 7199999
+    if interval=='1d':
+        predTime = df.tail(1).index.item().timestamp() * 1000 + 172799999
+    else:
+        predTime = df.tail(1).index.item().timestamp() * 1000 + 7199999
 
 
     inputs = df.values
