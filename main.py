@@ -187,16 +187,16 @@ def writeHCronLogs(event: Optional[str]):
     return JSONResponse(content=data, status_code=201)
 
 @app.get('/times/')
-def getLastOpenTime(symbol: Optional[str] = None, interval: Optional[str] = '1h', openTime: Optional[int] = 0):
+def getLastCloseTime(symbol: Optional[str] = None, interval: Optional[str] = '1h', closeTime: Optional[int] = 0):
 
     query = {"Symbol": f'{symbol}'}
     if interval == '1h':
-        price = list(prices.find(query).sort("OpenTime", -1).limit(1))
+        price = list(prices.find(query).sort("CloseTime", -1).limit(1))
     else:
-        price = list(prices_d.find(query).sort("OpenTime", -1).limit(1))
-    res = price[0]['OpenTime']
-    if openTime>res:
-        res=openTime
+        price = list(prices_d.find(query).sort("CloseTime", -1).limit(1))
+    res = price[0]['CloseTime']
+    if closeTime>res:
+        res=closeTime
     return res
 
 @app.get('/modelTypes/{id}')
