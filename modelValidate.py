@@ -72,7 +72,7 @@ def calc(symbol, interval, modelPath):
 
     # Load model
     fileName = modelPath
-    model = tf.keras.models.load_model(f'models/{interval}/{symbol}/{fileName}')
+    model = tf.keras.models.load_model(f'models/1/{interval}/{symbol}/{fileName}')
     closing_price = model.predict(X_test)
     closing_price = scaler.inverse_transform(closing_price)
 

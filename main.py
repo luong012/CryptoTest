@@ -91,6 +91,18 @@ async def getModelResults(id):
     if model is None:
         return JSONResponse(status_code=404)
 
+    try:
+        typeQuery = {"_id": ObjectId(str(model['modelType']))}
+    except:
+        return JSONResponse(status_code=404)
+    try:
+        modelType = modelTypes.find_one(typeQuery)
+    except:
+        return JSONResponse(status_code=404)
+
+    if modelType['outputWindows'] != 1:
+        return JSONResponse(status_code=404)
+
     modelJSON = json.dumps(model, default=str)
     data = json.loads(modelJSON)
     res = calc(data.get('symbol'), data.get('interval'), data.get('fileName'))
