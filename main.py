@@ -61,9 +61,14 @@ async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 24
     return JSONResponse(content=data, status_code=200)
 
 @app.get('/models/')
-async def getModelPath(symbol: Optional[str], interval: Optional[str] = '1h'):
+async def getModelPath(symbol: Optional[str], interval: Optional[str] = '1h', outputWindows: Optional[int] = 1):
 
-    query = {"symbol": f'{symbol}',"interval": f'{interval}'}
+    modelTypeQuery = {"outputWindows": outputWindows}
+    list_md_types = list(modelTypes.find(modelTypeQuery))
+
+    list_md_types_id = [str(r['_id']) for r in list_md_types]
+
+    query = {"symbol": f'{symbol}',"interval": f'{interval}', "modelType": {"$in": list_md_types_id}}
     print(query)
     list_cur = list(models.find(query).sort('lastMAPE', 1))
 
@@ -301,6 +306,7 @@ async def updateDefaultModel(id: str, model: Model):
 
 @app.get('/predicts/{id}')
 async def predNextPrice(id: str):
+    #get model info
     try:
         query = {"_id": ObjectId(id)}
     except:
@@ -312,9 +318,21 @@ async def predNextPrice(id: str):
     if model is None:
         return JSONResponse(status_code=404)
 
+    # get numbers of model's output windows
+    try:
+        typeQuery = {"_id": ObjectId(model['modelType'])}
+    except:
+        return JSONResponse(content="Not Found", status_code=404)
+
+    try:
+        modelType = modelTypes.find_one(typeQuery)
+    except:
+        return JSONResponse(status_code=404)
+
+
     modelJSON = json.dumps(model, default=str)
     data = json.loads(modelJSON)
-    res = predNext(data.get('symbol'), data.get('interval'), data.get('fileName'))
+    res = predNext(data.get('symbol'), data.get('interval'), data.get('fileName'), modelType['outputWindows'])
 
     resJSON = {}
     resJSON['prediction'] = res

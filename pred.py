@@ -8,17 +8,18 @@ import tensorflow as tf
 
 inputSize = 60
 
-def predNext(symbol, interval, modelPath):
+def predNext(symbol, interval, modelPath, outputWindows):
     df = preProcessing(symbol, interval)
 
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaled_data = scaler.fit_transform(df)
     df = df[-inputSize:]
-    if interval=='1d':
-        predTime = df.tail(1).index.item().timestamp() * 1000 + 172799999
+    if interval == '1d':
+        step = 86400000
     else:
-        predTime = df.tail(1).index.item().timestamp() * 1000 + 7199999
+        step = 3600000
 
+    baseTime = df.tail(1).index.item().timestamp() * 1000
 
     inputs = df.values
     inputs = inputs.reshape(-1,1)
@@ -27,7 +28,7 @@ def predNext(symbol, interval, modelPath):
 
     # Load model
     fileName = modelPath
-    model = tf.keras.models.load_model(f'models/{interval}/{symbol}/{fileName}')
+    model = tf.keras.models.load_model(f'models/{outputWindows}/{interval}/{symbol}/{fileName}')
 
     X_test = []
     # for i in range(60,inputs.shape[0]+1):
@@ -39,6 +40,20 @@ def predNext(symbol, interval, modelPath):
     closing_price = model.predict(tf.constant(X_test))
     closing_price = scaler.inverse_transform(closing_price)
 
-    res = {'CloseTime': predTime, 'Close': closing_price[0][0]}
+    predTime = baseTime + step
+    resLs = []
+
+    print(baseTime)
+
+    for i in range(outputWindows):
+        predTime += step
+        resLs.append([predTime-1, closing_price[0][i]])
+        # row = pd.DataFrame(data = [baseTime-1, closing_price[0][i]],columns=["CloseTime", "Close"])
+        # resDF.append(row)
+        # print(predTime-1, closing_price[0][i])
+
+    resDF = pd.DataFrame(data = resLs, columns=["CloseTime", "Close"])
+    resJSON = resDF.to_json(orient="records")
+    res = json.loads(resJSON)
 
     return res
