@@ -9,7 +9,9 @@ import tensorflow as tf
 inputSize = 60
 
 def predNext(symbol, interval, modelPath, outputWindows):
-    df = preProcessing(symbol, interval)
+    df = preProcessing(symbol, interval).drop('CloseTime', axis=1)
+
+    print(df)
 
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaled_data = scaler.fit_transform(df)
