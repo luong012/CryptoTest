@@ -2,6 +2,7 @@ from py_db import prices, prices_d
 import pandas as pd
 from utils.evaluation import mean_absolute_percentage_error
 import json
+import datetime
 
 def preProcessing(symbol, interval):
     query = {"Symbol": f'{symbol}'}
@@ -15,14 +16,9 @@ def preProcessing(symbol, interval):
     newDF['OpenTime'] = newDF['OpenTime'].apply(lambda x: x * 1000000)
     newDF['OpenTime'] = pd.to_datetime(newDF['OpenTime'])
 
-    newDF['CloseTime'] = pd.to_numeric(newDF['CloseTime'])
-    newDF['CloseTime'] = newDF['CloseTime'].apply(lambda x: x * 1000000)
-    newDF['CloseTime'] = pd.to_datetime(newDF['CloseTime'])
-
-
     newDF.index = newDF['OpenTime']
 
-    newDF.drop(newDF.columns[[0, 1, 2, 3, 4, 6, 7, 8]], axis=1, inplace=True)
+    newDF.drop(newDF.columns[[0, 1, 2, 3, 4, 6, 8]], axis=1, inplace=True)
 
     return newDF
 
@@ -36,8 +32,9 @@ def calc(symbol, interval, modelPath):
     import pandas as pd
     import tensorflow as tf
 
-    df = preProcessing(symbol, interval)
-
+    tmpDF = preProcessing(symbol, interval)
+    df = tmpDF.drop('CloseTime', axis=1)
+    tmpDF = tmpDF.drop('Close', axis=1)
     ratio = 0.8
 
     df['Close'] = pd.to_numeric(df['Close'])
@@ -53,7 +50,6 @@ def calc(symbol, interval, modelPath):
     # converting dataset into x_train and y_train
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaled_data = scaler.fit_transform(dataset)
-
 
 
     # predict
@@ -82,20 +78,21 @@ def calc(symbol, interval, modelPath):
     # print(mape)
     mape = mean_absolute_percentage_error(valid, closing_price)
 
-
-
+    step = 0
+    if interval=="1d":
+        step = 3599999
+    else:
+        step = 86399999
 
     valid = df[train_set_len:]
 
 
     valid['Predictions'] = closing_price
-    # plt.plot(train['Close'])
-    # plt.plot(valid['Close', 'Predictions'])
-    # plt.show()
-    valid['Time'] = valid.index
-    validJSON = valid.to_json(orient="records")
-    validParsed = json.loads(validJSON)
 
+    resDF = valid.merge(tmpDF, left_index=True, right_index=True)
+
+    validJSON = resDF.to_json(orient="records")
+    validParsed = json.loads(validJSON)
 
     res = {}
     res["mape"]=mape
