@@ -69,7 +69,6 @@ async def getModelPath(symbol: Optional[str], interval: Optional[str] = '1h', ou
     list_md_types_id = [str(r['_id']) for r in list_md_types]
 
     query = {"symbol": f'{symbol}',"interval": f'{interval}', "modelType": {"$in": list_md_types_id}}
-    print(query)
     list_cur = list(models.find(query).sort('lastMAPE', 1))
 
     res = json.dumps(list_cur, default=str)
@@ -100,12 +99,9 @@ async def getModelResults(id):
     except:
         return JSONResponse(status_code=404)
 
-    if modelType['outputWindows'] != 1:
-        return JSONResponse(status_code=404)
-
     modelJSON = json.dumps(model, default=str)
     data = json.loads(modelJSON)
-    res = calc(data.get('symbol'), data.get('interval'), data.get('fileName'))
+    res = calc(data.get('symbol'), data.get('interval'), data.get('fileName'), modelType['outputWindows'])
     updateContent = {}
     if data.get('mapeArr') is None:
         mapeLs = list()

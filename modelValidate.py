@@ -23,7 +23,7 @@ def preProcessing(symbol, interval):
     return newDF
 
 
-def calc(symbol, interval, modelPath):
+def calc(symbol, interval, modelPath, outputWindows):
 
     from sklearn.preprocessing import MinMaxScaler
 
@@ -68,7 +68,7 @@ def calc(symbol, interval, modelPath):
 
     # Load model
     fileName = modelPath
-    model = tf.keras.models.load_model(f'models/1/{interval}/{symbol}/{fileName}')
+    model = tf.keras.models.load_model(f'models/{outputWindows}/{interval}/{symbol}/{fileName}')
     closing_price = model.predict(X_test)
     closing_price = scaler.inverse_transform(closing_price)
 
@@ -86,15 +86,18 @@ def calc(symbol, interval, modelPath):
 
     valid = df[train_set_len:]
 
+    if outputWindows == 1:
+        valid['Predictions'] = closing_price
 
-    valid['Predictions'] = closing_price
+        resDF = valid.merge(tmpDF, left_index=True, right_index=True)
 
-    resDF = valid.merge(tmpDF, left_index=True, right_index=True)
-
-    validJSON = resDF.to_json(orient="records")
-    validParsed = json.loads(validJSON)
+        validJSON = resDF.to_json(orient="records")
+        validParsed = json.loads(validJSON)
 
     res = {}
     res["mape"]=mape
-    res["testRes"] = validParsed
+    if outputWindows == 1:
+        res["testRes"] = validParsed
+    else:
+        res["testRes"] = []
     return res
