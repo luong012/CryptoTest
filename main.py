@@ -52,7 +52,7 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: Optional[str] = None
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
@@ -76,7 +76,6 @@ def authenticate_user(username: str, password: str):
         return False
     return user
 
-print(authenticate_user('admin', 'ffff'))
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -108,7 +107,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 async def get_current_active_user(current_user: User = Depends(get_current_user)):
-    if current_user.disabled:
+    if current_user['disabled']:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
@@ -116,13 +115,42 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 async def testConn():
     return 1
 
-class Account(BaseModel):
-    interval: str
-    defaultModel: str
+class RegUser(BaseModel):
+    username: str
+    password: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
 
-@app.post('/auth/login/')
+@app.post('/auth/register/')
+def register(user: RegUser):
+    existed_user = get_user(user.username)
+    if existed_user:
+        return JSONResponse(content=json.loads(json.dumps({"message": "Username already exists"})), status_code=400)
+
+    hashed_password = get_password_hash(user.password)
+    username = user.username
+    email = user.email
+    full_name = user.full_name
+    disabled = False
+    user_data = {
+        "username": username,
+        "hashed_password": hashed_password,
+        "email": email,
+        "fullname": full_name,
+        "disabled": disabled
+    }
+
+    try:
+        user = users.insert_one(user_data)
+    except:
+        return JSONResponse(content=json.loads(json.dumps({"message": "Cannot create user"})), status_code=400)
+
+    return JSONResponse(content=json.loads(json.dumps({"message": "success"})), status_code=201)
+
+
+@app.post('/auth/login')
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(   form_data.username, form_data.password)
+    user = authenticate_user(  form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -135,8 +163,17 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+@app.get("/users/me/", response_model=User)
+async def read_users_me(current_user: User = Depends(get_current_active_user)):
+    return current_user
+
+
+@app.get("/users/me/items/")
+async def read_own_items(current_user: User = Depends(get_current_active_user)):
+    return [{"item_id": "Foo", "owner": current_user.username}]
+
 @app.get('/prices/')
-async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 240, interval: Optional[str] = '1h'):
+async def get_symbol_price(symbol: Optional[str] = None, limit: Optional[int] = 240, interval: Optional[str] = '1h'):
 
     #LIMIT MUST BE A POSITIVE INT
     if limit<1:
@@ -166,7 +203,7 @@ async def getSymbolPrice(symbol: Optional[str] = None, limit: Optional[int] = 24
     return JSONResponse(content=data, status_code=200)
 
 @app.get('/models/')
-async def getModelPath(symbol: Optional[str], interval: Optional[str] = '1h', outputWindows: Optional[int] = 1):
+async def get_model_path(symbol: Optional[str], interval: Optional[str] = '1h', outputWindows: Optional[int] = 1):
 
     modelTypeQuery = {"outputWindows": outputWindows}
     list_md_types = list(modelTypes.find(modelTypeQuery))
@@ -183,7 +220,7 @@ async def getModelPath(symbol: Optional[str], interval: Optional[str] = '1h', ou
     return JSONResponse(content=data, status_code=200)
 
 @app.get('/validates/{id}')
-async def getModelResults(id):
+async def get_model_results(id):
     try:
         query = {"_id": ObjectId(id)}
     except:
@@ -227,7 +264,7 @@ async def getModelResults(id):
     return res
 
 @app.post('/updates')
-async def updatePriceData(symbol: Optional[str], interval: Optional[str] = '1h'):
+async def update_price_data(symbol: Optional[str], interval: Optional[str] = '1h'):
 
     query = {"Symbol": f'{symbol}'}
     if interval=='1h':
@@ -263,7 +300,7 @@ async def updatePriceData(symbol: Optional[str], interval: Optional[str] = '1h')
     return JSONResponse(content=data, status_code=201)
 
 @app.post('/hourlyCrons')
-def writeHCronLogs(event: Optional[str]):
+def write_hourly_cron_logs(event: Optional[str]):
     log = {}
     log["event"] = ""
     if event=="start":
@@ -284,7 +321,7 @@ def writeHCronLogs(event: Optional[str]):
     return JSONResponse(content=data, status_code=201)
 
 @app.post('/dailyCrons')
-def writeHCronLogs(event: Optional[str]):
+def write_daily_cron_logs(event: Optional[str]):
     log = {}
     log["event"] = ""
     if event=="start":
@@ -305,7 +342,7 @@ def writeHCronLogs(event: Optional[str]):
     return JSONResponse(content=data, status_code=201)
 
 @app.get('/times/')
-def getLastCloseTime(symbol: Optional[str] = None, interval: Optional[str] = '1h', closeTime: Optional[int] = 0):
+def get_last_close_time_value(symbol: Optional[str] = None, interval: Optional[str] = '1h', closeTime: Optional[int] = 0):
 
     query = {"Symbol": f'{symbol}'}
     if interval == '1h':
@@ -318,7 +355,7 @@ def getLastCloseTime(symbol: Optional[str] = None, interval: Optional[str] = '1h
     return res
 
 @app.get('/modelTypes/{id}')
-async def getModelTypes(id):
+async def get_model_types(id):
     try:
         query = {"_id": ObjectId(id)}
     except:
@@ -336,7 +373,7 @@ async def getModelTypes(id):
     return JSONResponse(content=data, status_code=200)
 
 @app.get('/cryptos/all')
-async def getCryptos():
+async def get_cryptos():
 
     try:
         cryptoLs = list(cryptos.find())
@@ -351,7 +388,7 @@ async def getCryptos():
     return JSONResponse(content=data, status_code=200)
 
 @app.get('/cryptos/{id}')
-async def getCryptoInfos(id):
+async def get_crypto_infos(id):
     try:
         query = {"_id": ObjectId(id)}
     except:
@@ -369,7 +406,7 @@ async def getCryptoInfos(id):
     return JSONResponse(content=data, status_code=200)
 
 @app.get('/cryptos/')
-async def getCryptoInfos(symbol:str):
+async def get_crypto_infos(symbol:str):
     query = {"altSymbol": symbol}
     try:
         crypto = cryptos.find_one(query)
@@ -389,7 +426,7 @@ class Model(BaseModel):
 
 
 @app.put('/cryptos/{id}')
-async def updateDefaultModel(id: str, model: Model):
+async def update_default_model(id: str, model: Model):
     try:
         query = {"_id": ObjectId(id)}
     except:
@@ -418,7 +455,7 @@ async def updateDefaultModel(id: str, model: Model):
     return JSONResponse(content='success', status_code=200)
 
 @app.get('/predicts/{id}')
-async def predNextPrice(id: str):
+async def pred_next_price(id: str):
     #get model info
     try:
         query = {"_id": ObjectId(id)}
