@@ -41,6 +41,7 @@ olefile==0.46
 opt-einsum==3.3.0
 packaging==20.9
 pandas==1.2.4
+passlib
 Pillow==8.2.0
 protobuf==3.17.0
 pyasn1==0.4.8
@@ -54,6 +55,8 @@ pyparsing==2.4.7
 PySocks==1.7.1
 python-dateutil==2.8.1
 python-dotenv==0.17.1
+python-jose
+python-multipart
 pytz==2021.1
 PyYAML==5.4.1
 requests==2.25.1
