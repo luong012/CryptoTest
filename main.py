@@ -8,7 +8,7 @@ import requests
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from modelValidate import calc
-from py_db import prices, prices_d, models, cronLogs, modelTypes, cryptos, users
+from py_db import prices, prices_d, models, cronLogs, modelTypes, cryptos, users, defaultModels
 from fastapi.middleware.cors import CORSMiddleware
 from bson.objectid import ObjectId
 from convert import convert
@@ -141,9 +141,21 @@ def register(user: RegUser):
     }
 
     try:
+
+        defaultModelLs = list(defaultModels.find({"username": "admin"}))
+        for item in defaultModelLs:
+            del item['_id']
+            item['username'] = username
+
+        lsJSONStr = json.dumps(defaultModelLs)
+        parsedJSON = json.loads(lsJSONStr)
+        results = defaultModels.insert_many(parsedJSON)
+
         user = users.insert_one(user_data)
+
     except:
         return JSONResponse(content=json.loads(json.dumps({"message": "Cannot create user"})), status_code=400)
+
 
     return JSONResponse(content=json.loads(json.dumps({"message": "success"})), status_code=201)
 
@@ -167,10 +179,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
     return current_user
 
-
-@app.get("/users/me/items/")
-async def read_own_items(current_user: User = Depends(get_current_active_user)):
-    return [{"item_id": "Foo", "owner": current_user.username}]
 
 @app.get('/prices/')
 async def get_symbol_price(symbol: Optional[str] = None, limit: Optional[int] = 240, interval: Optional[str] = '1h'):

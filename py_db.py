@@ -19,3 +19,4 @@ cronLogs = db.cronLog
 modelTypes = db.ModelType
 cryptos = db.Crypto
 users = db.User
+defaultModels = db.DefaultModel
