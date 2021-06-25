@@ -122,7 +122,7 @@ class RegUser(BaseModel):
     full_name: Optional[str] = None
 
 @app.post('/auth/register/')
-def register(user: RegUser):
+async def register(user: RegUser):
     existed_user = get_user(user.username)
     if existed_user:
         return JSONResponse(content=json.loads(json.dumps({"message": "Username already exists"})), status_code=400)
@@ -161,7 +161,7 @@ def register(user: RegUser):
 
 
 @app.post('/auth/login')
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(  form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -429,38 +429,86 @@ async def get_crypto_infos(symbol:str):
     return JSONResponse(content=data, status_code=200)
 
 class Model(BaseModel):
+    symbol: str
     interval: str
     defaultModel: str
 
 
-@app.put('/cryptos/{id}')
-async def update_default_model(id: str, model: Model):
+# @app.put('/cryptos/{id}')
+# async def update_default_model(id: str, model: Model, current_user: User = Depends(get_current_active_user)):
+#     try:
+#         query = {"_id": ObjectId(id)}
+#     except:
+#         return JSONResponse(content="Not Found", status_code=404)
+#
+#     try:
+#         crypto = cryptos.find_one(query)
+#     except:
+#         return JSONResponse(content="Not Found", status_code=404)
+#
+#     if crypto is None:
+#         return JSONResponse(content="Not Found", status_code=404)
+#
+#     if model.interval!='1h' and model.interval!='1d':
+#         return JSONResponse(content="Bad Request", status_code=400)
+#
+#     # updateContent = {}
+#     # updateVal = {f'defaultModel.{model.interval}': model.defaultModel}
+#     # updateContent['$set'] = updateVal
+#     #
+#     # try:
+#     #     crypto = cryptos.update_one(query, updateContent)
+#     # except:
+#     #     return JSONResponse(status_code=500)
+#
+#     query = {'crypto': crypto['altsymbol'], 'username': current_user.username}
+#     updateContent = {}
+#     updateVal = {model.interval: model.defaultModel}
+#
+#     defaultmodel = defaultModels.find_one(query)
+#     print(defaultmodel)
+#     return JSONResponse(content='success', status_code=200)
+
+@app.put('/defaultModels/')
+async def update_default_model(model: Model, current_user: User = Depends(get_current_active_user)):
     try:
-        query = {"_id": ObjectId(id)}
+        query = {"altSymbol": model.symbol}
     except:
         return JSONResponse(content="Not Found", status_code=404)
 
     try:
         crypto = cryptos.find_one(query)
     except:
-        return JSONResponse(content="Not Found", status_code=404)
+        return JSONResponse(content="Symbol Not Found", status_code=404)
 
     if crypto is None:
-        return JSONResponse(content="Not Found", status_code=404)
+        return JSONResponse(content="Symbol Not Found", status_code=404)
 
     if model.interval!='1h' and model.interval!='1d':
         return JSONResponse(content="Bad Request", status_code=400)
 
+    try:
+        model_n = models.find_one({'_id': ObjectId(model.defaultModel)})
+    except:
+        return JSONResponse(content="Model Not Found", status_code=404)
+
+    if model_n is None:
+        return JSONResponse(content="Model Not Found", status_code=404)
+
+    query = {'crypto': model.symbol, 'username': current_user['username']}
     updateContent = {}
-    updateVal = {f'defaultModel.{model.interval}': model.defaultModel}
+    updateVal = {model.interval: model.defaultModel}
+
     updateContent['$set'] = updateVal
 
     try:
-        crypto = cryptos.update_one(query, updateContent)
+        defaultModel = defaultModels.update_one(query, updateContent)
     except:
         return JSONResponse(status_code=500)
 
+    print(defaultModel)
     return JSONResponse(content='success', status_code=200)
+
 
 @app.get('/predicts/{id}')
 async def pred_next_price(id: str):
