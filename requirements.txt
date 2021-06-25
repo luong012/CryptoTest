@@ -1,5 +1,6 @@
 bcrypt
 passlib
+pandas
 pymongo
 python-jose
 python-multipart
