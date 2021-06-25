@@ -469,6 +469,31 @@ class Model(BaseModel):
 #     print(defaultmodel)
 #     return JSONResponse(content='success', status_code=200)
 
+@app.get('/defaultModels/')
+async def get_default_model(symbol: str, current_user: User = Depends(get_current_active_user)):
+    query = {"altSymbol": symbol}
+    try:
+        crypto = cryptos.find_one(query)
+    except:
+        return JSONResponse(status_code=404)
+    if crypto is None:
+        return JSONResponse(status_code=404)
+
+    query = {"crypto": symbol, "username": current_user['username']}
+
+    try:
+        defaultModel = defaultModels.find_one(query)
+    except:
+        return JSONResponse(status_code=404)
+
+    if defaultModel is None:
+        return JSONResponse(status_code=404)
+
+    jsonstr = json.dumps(defaultModel, default=str)
+    json_compatible_item_data = jsonable_encoder(jsonstr)
+    data = json.loads(json_compatible_item_data)
+    return JSONResponse(content=data, status_code=200)
+
 @app.put('/defaultModels/')
 async def update_default_model(model: Model, current_user: User = Depends(get_current_active_user)):
     try:
