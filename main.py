@@ -4,6 +4,7 @@ import os
 from fastapi import FastAPI, Request, Response
 from fastapi_redis_cache import FastApiRedisCache, cache
 
+from sqlalchemy.orm import Session
 from functools import partial, update_wrapper
 from fastapi import FastAPI, HTTPException, status, Depends
 import datetime
@@ -52,7 +53,7 @@ def startup():
         host_url=os.environ.get("REDIS_URL", LOCAL_REDIS_URL),
         prefix="myapi-cache",
         response_header="X-MyAPI-Cache",
-        ignore_arg_types=[Request, Response]
+        ignore_arg_types=[Request, Response, Session]
     )
 
 class User(BaseModel):
