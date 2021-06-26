@@ -26,7 +26,7 @@ from passlib.context import CryptContext
 
 
 
-LOCAL_REDIS_URL = "redis://127.0.0.1:6379"
+LOCAL_REDIS_URL = "redis://52.175.57.6:6379"
 
 ##
 SECRET_KEY = "0e5f57fdf004e117296a9c6c4a2f1b9f7ed6d09e24419b48ef64edfb612505db"
