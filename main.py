@@ -202,7 +202,7 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)):
 
 @app.get('/prices/')
 @cache(expire=86400)
-async def get_symbol_price(symbol: Optional[str] = None, limit: Optional[int] = 240, interval: Optional[str] = '1h', closeTime: Optional[int] = 0):
+async def get_symbol_price(symbol: Optional[str] = None, limit: Optional[int] = 240, interval: Optional[str] = '1h', closeTime: Optional[int] = int(datetime.datetime.now().timestamp()*1000)):
 
     #LIMIT MUST BE A POSITIVE INT
     if limit<1:
@@ -228,8 +228,7 @@ async def get_symbol_price(symbol: Optional[str] = None, limit: Optional[int] = 
     res = json.dumps(list_cur, default=str)
     json_compatible_item_data = jsonable_encoder(res)
     data = json.loads(json_compatible_item_data)
-
-    return JSONResponse(content=data, status_code=200)
+    return data
 
 @app.get('/models/')
 async def get_model_path(symbol: Optional[str], interval: Optional[str] = '1h', outputWindows: Optional[int] = 1):
