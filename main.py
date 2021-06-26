@@ -597,27 +597,3 @@ async def pred_next_price(id: str, closeTime: Optional[int]):
     return data
 
 
-
-@app.get('/lastPrice/')
-@cache(expire=86400)
-def get_last_price(symbol:str, interval: str, openTime: int):
-    if symbol:
-        query = {"Symbol": f'{symbol}'}
-
-
-    # PRICES COLLECTION FOR HOUR INTERVAL. PRICES_D COLLECTION FOR DATE INTERVAL
-    if interval == '1d':
-        list_cur = list(prices_d.find(query).sort('CloseTime', -1).limit(1))
-        if len(list_cur) < 1:
-            raise HTTPException(status_code=400, detail="Bad Request")
-    else:
-        list_cur = list(prices.find(query).sort('CloseTime', -1).limit(1))
-        if len(list_cur) < 1:
-            raise HTTPException(status_code=400, detail="Bad Request")
-
-    res = json.dumps(list_cur, default=str)
-    json_compatible_item_data = jsonable_encoder(res)
-    data = json.loads(json_compatible_item_data)
-
-    return data
-
