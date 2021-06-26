@@ -200,8 +200,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
     return current_user
 
-@cache(expire=86400)
 @app.get('/prices/')
+@cache(expire=86400)
 async def get_symbol_price(symbol: Optional[str] = None, limit: Optional[int] = 240, interval: Optional[str] = '1h', closeTime: Optional[int] = 0):
 
     #LIMIT MUST BE A POSITIVE INT
