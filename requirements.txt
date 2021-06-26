@@ -7,6 +7,7 @@ pymongo
 python-jose
 python-multipart
 scikit-learn
+sqlalchemy
 tensorflow==2.5.0
 tensorflow-estimator==2.5.0
 termcolor==1.1.0
