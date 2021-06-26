@@ -1,5 +1,6 @@
 bcrypt
 fastapi-redis-cache
+numpy = 1.19.5
 passlib
 pandas
 pymongo
