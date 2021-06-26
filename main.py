@@ -201,7 +201,7 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)):
     return current_user
 
 @app.get('/prices/')
-@cache(expire=86400)
+@cache(expire=3600)
 async def get_symbol_price(symbol: Optional[str] = None, limit: Optional[int] = 240, interval: Optional[str] = '1h', closeTime: Optional[int] = int(datetime.datetime.now().timestamp()*1000)):
 
     #LIMIT MUST BE A POSITIVE INT
