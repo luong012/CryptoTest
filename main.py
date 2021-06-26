@@ -1,5 +1,10 @@
 import json
+import os
 
+from fastapi import FastAPI, Request, Response
+from fastapi_redis_cache import FastApiRedisCache, cache
+
+from functools import partial, update_wrapper
 from fastapi import FastAPI, HTTPException, status, Depends
 import datetime
 from datetime import timedelta
@@ -20,6 +25,10 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 
+
+LOCAL_REDIS_URL = "redis://127.0.0.1:6379"
+
+##
 SECRET_KEY = "0e5f57fdf004e117296a9c6c4a2f1b9f7ed6d09e24419b48ef64edfb612505db"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 5000
@@ -34,6 +43,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+##redis
+@app.on_event("startup")
+def startup():
+    redis_cache = FastApiRedisCache()
+    redis_cache.init(
+        host_url=os.environ.get("REDIS_URL", LOCAL_REDIS_URL),
+        prefix="myapi-cache",
+        response_header="X-MyAPI-Cache",
+        ignore_arg_types=[Request, Response]
+    )
 
 class User(BaseModel):
     username: str
@@ -227,8 +247,10 @@ async def get_model_path(symbol: Optional[str], interval: Optional[str] = '1h', 
 
     return JSONResponse(content=data, status_code=200)
 
+
 @app.get('/validates/{id}')
-async def get_model_results(id):
+@cache(expire=86400)
+async def get_model_results(id: str, closeTime:int):
     try:
         query = {"_id": ObjectId(id)}
     except:
@@ -536,7 +558,8 @@ async def update_default_model(model: Model, current_user: User = Depends(get_cu
 
 
 @app.get('/predicts/{id}')
-async def pred_next_price(id: str):
+@cache(expire=86400)
+async def pred_next_price(id: str, closeTime: Optional[int]):
     #get model info
     try:
         query = {"_id": ObjectId(id)}
@@ -571,4 +594,30 @@ async def pred_next_price(id: str):
     json_compatible_item_data = jsonable_encoder(jsonstr)
     data = json.loads(json_compatible_item_data)
 
-    return JSONResponse(content=data, status_code=200)
+    return data
+
+
+
+@app.get('/lastPrice/')
+@cache(expire=86400)
+def get_last_price(symbol:str, interval: str, openTime: int):
+    if symbol:
+        query = {"Symbol": f'{symbol}'}
+
+
+    # PRICES COLLECTION FOR HOUR INTERVAL. PRICES_D COLLECTION FOR DATE INTERVAL
+    if interval == '1d':
+        list_cur = list(prices_d.find(query).sort('CloseTime', -1).limit(1))
+        if len(list_cur) < 1:
+            raise HTTPException(status_code=400, detail="Bad Request")
+    else:
+        list_cur = list(prices.find(query).sort('CloseTime', -1).limit(1))
+        if len(list_cur) < 1:
+            raise HTTPException(status_code=400, detail="Bad Request")
+
+    res = json.dumps(list_cur, default=str)
+    json_compatible_item_data = jsonable_encoder(res)
+    data = json.loads(json_compatible_item_data)
+
+    return data
+
