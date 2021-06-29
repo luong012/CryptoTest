@@ -32,7 +32,7 @@ LOCAL_REDIS_URL = "redis://52.175.57.6:6379"
 ##
 SECRET_KEY = "0e5f57fdf004e117296a9c6c4a2f1b9f7ed6d09e24419b48ef64edfb612505db"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 5000
+ACCESS_TOKEN_EXPIRE_MINUTES = 300
 
 origins = ["*"]
 
@@ -183,7 +183,7 @@ async def register(user: RegUser):
 
 @app.post('/auth/login')
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(  form_data.username, form_data.password)
+    user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
