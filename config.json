@@ -1,6 +1,6 @@
 {
   "user": "crypto",
-  "pass": "crypto-pass",
-  "ip": "52.175.57.6",
+  "pass": "crypto-password",
+  "ip": "52.184.25.43",
   "apiEndpoint": "127.0.0.1:8000"
 }
