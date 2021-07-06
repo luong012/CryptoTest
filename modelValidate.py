@@ -74,9 +74,15 @@ def calc(symbol, interval, modelPath, outputWindows):
 
     # Evaluating model accuracy
     rms = np.sqrt(np.mean(np.power((valid - closing_price), 2)))
-
+    mape: int = 0
     # print(mape)
-    mape = mean_absolute_percentage_error(valid, closing_price)
+    if int(outputWindows)==10:
+        test = closing_price[:-9]
+        pred = test[..., 9].ravel()
+        actual = valid[9:][..., 0].ravel()
+        mape = mean_absolute_percentage_error(actual, pred)
+    else:
+        mape = mean_absolute_percentage_error(valid, closing_price)
 
     step = 0
     if interval=="1d":
