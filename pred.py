@@ -6,9 +6,9 @@ import numpy as np
 
 import tensorflow as tf
 
-inputSize = 60
+# inputSize = 60
 
-def predNext(symbol, interval, modelPath, outputWindows):
+def predNext(symbol, interval, modelPath, inputSize ,outputWindows):
     df = preProcessing(symbol, interval).drop('CloseTime', axis=1)
 
     print(df)

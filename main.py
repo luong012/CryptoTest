@@ -273,7 +273,7 @@ async def get_model_results(id: str, closeTime:int):
 
     modelJSON = json.dumps(model, default=str)
     data = json.loads(modelJSON)
-    res = calc(data.get('symbol'), data.get('interval'), data.get('fileName'), modelType['outputWindows'])
+    res = calc(data.get('symbol'), data.get('interval'), data.get('fileName'), modelType['inputWindows'], modelType['outputWindows'])
     updateContent = {}
     if data.get('mapeArr') is None:
         mapeLs = list()
@@ -586,7 +586,7 @@ async def pred_next_price(id: str, closeTime: Optional[int]):
 
     modelJSON = json.dumps(model, default=str)
     data = json.loads(modelJSON)
-    res = predNext(data.get('symbol'), data.get('interval'), data.get('fileName'), modelType['outputWindows'])
+    res = predNext(data.get('symbol'), data.get('interval'), data.get('fileName'), modelType['inputWindows'], modelType['outputWindows'])
 
     resJSON = {}
     resJSON['prediction'] = res

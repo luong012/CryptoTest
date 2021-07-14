@@ -23,7 +23,7 @@ def preProcessing(symbol, interval):
     return newDF
 
 
-def calc(symbol, interval, modelPath, outputWindows):
+def calc(symbol, interval, modelPath, inputSize, outputWindows):
 
     from sklearn.preprocessing import MinMaxScaler
 
@@ -53,13 +53,13 @@ def calc(symbol, interval, modelPath, outputWindows):
 
 
     # predict
-    inputs = df[len(df) - len(valid) - 60:].values
+    inputs = df[len(df) - len(valid) - inputSize:].values
     inputs = inputs.reshape(-1, 1)
     inputs = scaler.transform(inputs)
 
     X_test = []
-    for i in range(60, inputs.shape[0]):
-        X_test.append(inputs[i - 60:i, 0])
+    for i in range(inputSize, inputs.shape[0]):
+        X_test.append(inputs[i - inputSize:i, 0])
     X_test = np.array(X_test)
     X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
 
