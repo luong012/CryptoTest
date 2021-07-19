@@ -214,7 +214,7 @@ async def get_symbol_price(symbol: Optional[str] = None, limit: Optional[int] = 
         query = {"Symbol" : f'{symbol}'}
 
     #PRICES COLLECTION FOR HOUR INTERVAL. PRICES_D COLLECTION FOR DATE INTERVAL
-    if interval == '1d':
+    if interval == '1d' or interval == '10d':
         list_cur = list(prices_d.find(query).sort('CloseTime', -1).limit(limit))
         if len(list_cur) < 1:
             raise HTTPException(status_code=400, detail="Bad Request")
